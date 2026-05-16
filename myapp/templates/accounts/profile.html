@@ -3,83 +3,444 @@
 {% block title %}Profile - {{ user.get_full_name }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-4">
-        <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-person-circle"></i> Profile Picture</h5>
-            </div>
-            <div class="card-body text-center">
-                {% if user.profile.profile_picture %}
-                    <img src="{{ user.profile.profile_picture.url }}" alt="Profile Picture" 
-                         class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
-                {% else %}
-                    <div class="display-1 mb-3">
-                        <i class="bi bi-person-circle text-primary"></i>
-                    </div>
-                {% endif %}
-                
-                <h4>{{ user.get_full_name }}</h4>
-                <p class="text-muted">
-                    <span class="badge bg-info">{{ user.profile.get_user_type_display }}</span>
-                </p>
-                <p><i class="bi bi-envelope"></i> {{ user.email }}</p>
-                <p><i class="bi bi-telephone"></i> {{ user.profile.phone_number|default:"Not provided" }}</p>
+<style>
+    .profile-page {
+        --profile-ink: #172033;
+        --profile-muted: #6c778b;
+        --profile-line: #e6eaf1;
+        --profile-soft: #f7f9fc;
+        --profile-primary: #0d6efd;
+    }
+
+    .profile-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        background:
+            linear-gradient(135deg, rgba(13, 110, 253, .95), rgba(25, 135, 84, .86)),
+            url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1600&q=80") center/cover;
+        color: #fff;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .profile-hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -10% -45% 45%;
+        height: 15rem;
+        background: rgba(255, 255, 255, .16);
+        transform: rotate(-8deg);
+    }
+
+    .profile-hero-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+
+    .profile-avatar {
+        width: 6.5rem;
+        height: 6.5rem;
+        flex: 0 0 auto;
+        border: 4px solid rgba(255, 255, 255, .75);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .2);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 2.4rem;
+        font-weight: 700;
+        object-fit: cover;
+        box-shadow: 0 1rem 2rem rgba(0, 0, 0, .18);
+    }
+
+    .profile-role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        border-radius: 999px;
+        padding: .4rem .7rem;
+        background: rgba(255, 255, 255, .2);
+        font-size: .875rem;
+        font-weight: 600;
+    }
+
+    .profile-shell {
+        margin-bottom: 2rem;
+    }
+
+    .profile-card {
+        border: 0;
+        border-radius: 8px;
+        box-shadow: 0 .75rem 1.75rem rgba(25, 39, 64, .08);
+    }
+
+    .profile-card .card-header {
+        border: 0;
+        border-radius: 8px 8px 0 0 !important;
+        background: #fff;
+        padding: 1.25rem 1.5rem 0;
+    }
+
+    .profile-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .profile-section-title {
+        color: var(--profile-ink);
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .profile-section-subtitle {
+        color: var(--profile-muted);
+        font-size: .9rem;
+        margin: .25rem 0 0;
+    }
+
+    .profile-info-list {
+        display: grid;
+        gap: .85rem;
+    }
+
+    .profile-info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: .85rem;
+        border: 1px solid var(--profile-line);
+        border-radius: 8px;
+        background: var(--profile-soft);
+        padding: .9rem;
+    }
+
+    .profile-info-icon,
+    .profile-input-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        flex: 0 0 auto;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: #eaf2ff;
+        color: var(--profile-primary);
+    }
+
+    .profile-info-label {
+        color: var(--profile-muted);
+        font-size: .78rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .profile-info-value {
+        color: var(--profile-ink);
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .profile-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .75rem;
+        border-top: 1px solid var(--profile-line);
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+    }
+
+    .profile-meta-item {
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid var(--profile-line);
+        padding: .85rem;
+    }
+
+    .profile-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .profile-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .profile-field .form-label {
+        color: var(--profile-ink);
+        font-weight: 700;
+    }
+
+    .profile-field .form-control {
+        min-height: 2.85rem;
+        border-color: #d9dee8;
+        border-radius: 8px;
+    }
+
+    .profile-field .form-control:focus {
+        border-color: var(--profile-primary);
+        box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .12);
+    }
+
+    .profile-upload {
+        border: 1px dashed #b8c2d6;
+        border-radius: 8px;
+        background: var(--profile-soft);
+        padding: 1rem;
+    }
+
+    .profile-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .75rem;
+        border-top: 1px solid var(--profile-line);
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+    }
+
+    .profile-actions .btn {
+        min-height: 2.75rem;
+        font-weight: 700;
+    }
+
+    @media (max-width: 767.98px) {
+        .profile-hero {
+            padding: 1.5rem;
+        }
+
+        .profile-hero-content {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .profile-avatar {
+            width: 5.5rem;
+            height: 5.5rem;
+            font-size: 2rem;
+        }
+
+        .profile-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .profile-actions {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .profile-meta-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="profile-page">
+    <section class="profile-hero">
+        <div class="profile-hero-content">
+            {% if user.profile.profile_picture %}
+                <img src="{{ user.profile.profile_picture.url }}" alt="{{ user.get_full_name|default:user.username }} profile picture" class="profile-avatar">
+            {% else %}
+                <div class="profile-avatar" aria-hidden="true">
+                    {{ user.first_name|default:user.username|slice:":1"|upper }}
+                </div>
+            {% endif %}
+            <div>
+                <span class="profile-role-badge mb-3">
+                    <i class="bi bi-shield-check"></i>
+                    {{ user.profile.get_user_type_display }}
+                </span>
+                <h1 class="h2 mb-2">{% firstof user.get_full_name user.username %}</h1>
+                <div class="d-flex flex-wrap gap-3">
+                    <span><i class="bi bi-person me-1"></i>{{ user.username }}</span>
+                    <span><i class="bi bi-envelope me-1"></i>{{ user.email|default:"No email added" }}</span>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Edit Profile</h5>
+    </section>
+
+    <div class="row g-4 profile-shell">
+        <div class="col-lg-4">
+            <div class="card profile-card h-100">
+                <div class="card-header">
+                    <h2 class="profile-section-title">Account Snapshot</h2>
+                    <p class="profile-section-subtitle">Your visible contact and account details.</p>
+                </div>
+                <div class="card-body">
+                    <div class="profile-info-list">
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="bi bi-envelope"></i>
+                            </div>
+                            <div>
+                                <div class="profile-info-label">Email</div>
+                                <div class="profile-info-value">{{ user.email|default:"Not provided" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="bi bi-telephone"></i>
+                            </div>
+                            <div>
+                                <div class="profile-info-label">Phone</div>
+                                <div class="profile-info-value">{{ user.profile.phone_number|default:"Not provided" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="bi bi-calendar-event"></i>
+                            </div>
+                            <div>
+                                <div class="profile-info-label">Date of Birth</div>
+                                <div class="profile-info-value">{{ user.profile.date_of_birth|date:"M d, Y"|default:"Not provided" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="bi bi-geo-alt"></i>
+                            </div>
+                            <div>
+                                <div class="profile-info-label">Address</div>
+                                <div class="profile-info-value">{{ user.profile.address|default:"Not provided" }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-meta-grid">
+                        <div class="profile-meta-item">
+                            <div class="profile-info-label">Joined</div>
+                            <div class="profile-info-value">{{ user.date_joined|date:"M d, Y" }}</div>
+                        </div>
+                        <div class="profile-meta-item">
+                            <div class="profile-info-label">Last Login</div>
+                            <div class="profile-info-value">{{ user.last_login|date:"M d, Y"|default:"Not recorded" }}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    {% if form.errors %}
-                    <div class="alert alert-danger">
-                        <strong>Please correct the following errors:</strong>
-                        <ul>
-                            {% for field in form %}
-                                {% for error in field.errors %}
-                                    <li>{{ field.label }}: {{ error }}</li>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card profile-card">
+                <div class="card-header">
+                    <h2 class="profile-section-title">Edit Profile</h2>
+                    <p class="profile-section-subtitle">Update your contact details and profile picture.</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger d-flex gap-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div>
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
                                 {% endfor %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
-                        <input type="text" name="{{ form.phone_number.name }}" id="{{ form.phone_number.id_for_label }}" 
-                               class="form-control" value="{{ form.phone_number.value|default:'' }}">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">Date of Birth</label>
-                        <input type="date" name="{{ form.date_of_birth.name }}" id="{{ form.date_of_birth.id_for_label }}" 
-                               class="form-control" value="{{ form.date_of_birth.value|date:'Y-m-d'|default:'' }}">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
-                        <textarea name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" 
-                                  class="form-control" rows="3">{{ form.address.value|default:'' }}</textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Profile Picture</label>
-                        <input type="file" name="{{ form.profile_picture.name }}" id="{{ form.profile_picture.id_for_label }}" 
-                               class="form-control" accept="image/*">
-                        <small class="text-muted">Leave empty to keep current picture</small>
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Update Profile</button>
-                    </div>
-                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="profile-form-grid">
+                            <div class="profile-field">
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-telephone text-primary"></i></span>
+                                    <input type="text"
+                                           name="{{ form.phone_number.name }}"
+                                           id="{{ form.phone_number.id_for_label }}"
+                                           class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}"
+                                           value="{{ form.phone_number.value|default:'' }}"
+                                           placeholder="Enter phone number">
+                                    {% if form.phone_number.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.phone_number.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="profile-field">
+                                <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">Date of Birth</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-calendar3 text-primary"></i></span>
+                                    <input type="date"
+                                           name="{{ form.date_of_birth.name }}"
+                                           id="{{ form.date_of_birth.id_for_label }}"
+                                           class="form-control {% if form.date_of_birth.errors %}is-invalid{% endif %}"
+                                           value="{{ form.date_of_birth.value|date:'Y-m-d'|default:'' }}">
+                                    {% if form.date_of_birth.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.date_of_birth.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="profile-field profile-field-full">
+                                <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                                <textarea name="{{ form.address.name }}"
+                                          id="{{ form.address.id_for_label }}"
+                                          class="form-control {% if form.address.errors %}is-invalid{% endif %}"
+                                          rows="4"
+                                          placeholder="Enter address">{{ form.address.value|default:'' }}</textarea>
+                                {% if form.address.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.address.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="profile-field profile-field-full">
+                                <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Profile Picture</label>
+                                <div class="profile-upload">
+                                    <div class="d-flex align-items-center gap-3 mb-3">
+                                        <div class="profile-input-icon">
+                                            <i class="bi bi-image"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">Upload a new photo</div>
+                                            <div class="text-muted small">Leave this empty to keep the current picture.</div>
+                                        </div>
+                                    </div>
+                                    <input type="file"
+                                           name="{{ form.profile_picture.name }}"
+                                           id="{{ form.profile_picture.id_for_label }}"
+                                           class="form-control {% if form.profile_picture.errors %}is-invalid{% endif %}"
+                                           accept="image/*">
+                                    {% if form.profile_picture.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.profile_picture.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Back
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check2-circle me-1"></i>Update Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
