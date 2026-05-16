@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Subjects List{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">Subject Management</h1>
+        </div>
+        <div class="col text-end">
+            <a href="{% url 'subject_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Subject
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            {% if subjects %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Subject Code</th>
+                            <th>Subject Name</th>
+                            <th>Credits</th>
+                            <th>Description</th>
+                            <th>Teachers</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subject in subjects %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ subject.code }}</span></td>
+                            <td><strong>{{ subject.name }}</strong></td>
+                            <td>{{ subject.credits }}</td>
+                            <td>{{ subject.description|truncatechars:50 }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ subject.teachers.count }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'subject_update' subject.pk %}" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'subject_delete' subject.pk %}" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="bi bi-book display-4 d-block mb-3 text-muted"></i>
+                                <h5>No Subjects Found</h5>
+                                <p class="text-muted">Get started by adding a new subject.</p>
+                                <a href="{% url 'subject_create' %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Add Subject
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
